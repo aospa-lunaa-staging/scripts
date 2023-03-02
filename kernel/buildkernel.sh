@@ -6,17 +6,18 @@
 
 SECONDS=0 # builtin bash timer
 ZIPNAME="topaz-kernel-lunaa-$(date '+%Y%m%d-%H%M').zip"
-TC_DIR="/home/rk134/aospa/kernel/kernel/work/tc/azure"
-GCC_64_DIR="/home/rk134/aospa/kernel/kernel/work/tc/aarch64-linux-android-4.9"
-GCC_32_DIR="/home/rk134/aospa/kernel/kernel/work/tc/arm-linux-androideabi-4.9"
+TC_DIR="/home/rk134/aospa/kernel/kernel/work/tc/clang"
+#GCC_64_DIR="/home/rk134/aospa/kernel/kernel/work/tc/aarch64-linux-android-4.9"
+#GCC_32_DIR="/home/rk134/aospa/kernel/kernel/work/tc/arm-linux-androideabi-4.9"
 export PATH="$TC_DIR/bin:$PATH"
 AK3_DIR="AnyKernel3"
 DEFCONFIG="vendor/lahaina-qgki_defconfig"
 
-# Make arguments & parameters for clang-16
-MAKE_PARAMS="O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 \
-       CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-android- \
-       CROSS_COMPILE_COMPAT=$GCC_32_DIR/bin/arm-linux-androideabi-"
+# Make arguments & parameters for clang-18
+MAKE_PARAMS="O=out ARCH=arm64 \
+	LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip LLVM=1 LLVM_IAS=1 \
+    CROSS_COMPILE=aarch64-linux-gnu- \
+    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- "
 
 # Regenerating defconfigs
 if [[ $2 = "-sdr" || $1 = "--savedef-regen" ]]; then
@@ -55,11 +56,11 @@ if [[ $2 = "-c" || $1 = "--clean-output" ]]; then
 fi
 
 mkdir -p out
-make $MAKE_PARAMS $DEFCONFIG
-ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-android- CROSS_COMPILE_ARM32=$GCC_32_DIR/bin/arm-linux-androideabi- scripts/kconfig/merge_config.sh -O out arch/arm64/configs/vendor/lahaina-qgki_defconfig arch/arm64/configs/vendor/oplus_QGKI.config arch/arm64/configs/vendor/lahaina_QGKI.config arch/arm64/configs/vendor/oplus_yupik_QGKI.config
+make $MAKE_PARAMS CC="ccache clang" $DEFCONFIG
+#ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-android- CROSS_COMPILE_ARM32=$GCC_32_DIR/bin/arm-linux-androideabi- scripts/kconfig/merge_config.sh -O out arch/arm64/configs/vendor/lahaina-qgki_defconfig arch/arm64/configs/vendor/oplus_QGKI.config arch/arm64/configs/vendor/lahaina_QGKI.config arch/arm64/configs/vendor/oplus_yupik_QGKI.config
 
 echo -e "\nStarting compilation...\n"
-make -j$(nproc --all) $MAKE_PARAMS || exit $?
+make -j$(nproc --all) $MAKE_PARAMS CC="ccache clang" || exit $?
 
 kernel="out/arch/arm64/boot/Image"
 
